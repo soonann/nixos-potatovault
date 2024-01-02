@@ -9,11 +9,16 @@
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./zfs
+      ./virtualisation
     ];
 
   # Bootloader. - default settings
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  # xfs support
+  boot.kernelModules = [ "xfs" ];
+  boot.supportedFilesystems = [ "xfs" ];
 
   networking.hostName = "potatovault-nix"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -57,6 +62,10 @@
     packages = with pkgs; [];
   };
 
+  security.sudo.extraConfig = ''
+    Defaults        timestamp_timeout=30
+  '';
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
@@ -64,11 +73,17 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     vim
+    tmux
+    htop
     tailscale 
     git
   ];
 
-  services.tailscale.enable = true;
+  services.tailscale = {
+    enable = true;
+    extraUpFlags = "--ssh --advertise-exit-node --exit-node";
+    useRoutingFeatures = "server";
+  };
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
